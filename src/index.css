@@ -1,0 +1,68 @@
+/* --- 1. TAILWIND DIRECTIVES (Wajib jika menggunakan build tools) --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animasi tambahan */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* --- 3. PRINT STYLES (Pengaturan Cetak Rapor) --- */
+/* Memastikan tampilan rapor bersih saat dicetak (Ctrl+P) */
+@media print {
+  /* Sembunyikan elemen navigasi, tombol, dan sidebar saat dicetak */
+  aside, 
+  nav, 
+  button, 
+  .no-print {
+    display: none !important;
+  }
+
+  /* Pastikan container utama mengambil lebar penuh */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hilangkan shadow dan border pada kartu saat dicetak */
+  .shadow-lg, 
+  .shadow-sm, 
+  .border {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Paksa background color tercetak (browser modern biasanya menghapusnya untuk hemat tinta) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Pastikan page break (pindah halaman) rapi jika ada banyak konten */
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+/* --- 4. UTILITIES TAMBAHAN --- */
+/* Menghilangkan scrollbar default tapi tetap bisa discroll (Opsional) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Padding aman untuk iPhone/Mobile modern (Notch area) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
