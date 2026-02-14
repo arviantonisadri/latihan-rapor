@@ -7,38 +7,33 @@ import {
   FileText, 
   ChevronRight, 
   Menu, 
-  X, 
-  Plus, 
-  Save, 
-  Award, 
-  Calendar, 
-  Search, 
-  Download, 
-  Share2, 
-  CheckCircle, 
-  TrendingUp, 
+  X,
+  Plus,
+  Save,
+  Award,
+  Calendar,
+  Search,
+  Download,
+  Share2,
+  CheckCircle,
+  TrendingUp,
   GraduationCap, 
   Grid, 
-  MoreHorizontal, 
-  LogOut, 
-  Lock, 
-  User,
-  Trash2, // Added: Ikon Hapus
-  Edit,   // Added: Ikon Edit
-  Upload  // Added: Ikon Upload
+  MoreHorizontal,
+  LogOut, // Added
+  Lock, // Added
+  User // Added
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // --- MOCK DATA & CONFIGURATION ---
 
+// Default Config untuk Lembaga A (Standard)
 const initialConfig = {
   institutionName: "TPQ Al-Hidayah",
   institutionAddress: "Jl. H. Nawi Raya No. 12, Jakarta Selatan",
   institutionLogo: null,
-  headmasterName: "H. Abdullah S.Pd.I", // Added: Nama Kepsek
-  signatureHeadmaster: null, // Added: TTD Kepsek
-  signatureTeacher: null,    // Added: TTD Guru
-  gradingType: "numeric", 
+  gradingType: "numeric", // 'numeric' (0-100) or 'predicate' (Mumtaz, Jayyid, etc)
   modules: {
     tilawah: true,
     tahfidz: true,
@@ -47,6 +42,7 @@ const initialConfig = {
   logoColor: "bg-emerald-600"
 };
 
+// Mock Data Santri (Initial)
 const initialStudents = [
   { id: 1, name: "Ahmad Fatih", class: "Jilid 4", parent: "Bpk. Budi", attendance: 95, lastSurah: "An-Naba", lastAyat: 10 },
   { id: 2, name: "Siti Aisyah", class: "Al-Qur'an", parent: "Bpk. Rahman", attendance: 88, lastSurah: "Al-Baqarah", lastAyat: 15 },
@@ -54,17 +50,20 @@ const initialStudents = [
   { id: 4, name: "Fatimah Azzahra", class: "Jilid 2", parent: "Bpk. Yusuf", attendance: 100, lastSurah: "Al-Falaq", lastAyat: 5 },
 ];
 
+// Mock Data Guru (Initial)
 const initialTeachers = [
   { id: 1, name: "Ustadz Abdullah", phone: "081234567890", subject: "Tahfidz" },
   { id: 2, name: "Ustadzah Halimah", phone: "081987654321", subject: "Tilawati" },
 ];
 
+// Mock Data Kelas (Initial)
 const initialClasses = [
   { id: 1, name: "Jilid 1 (Dasar)", schedule: "Senin - Kamis, 16.00" },
   { id: 2, name: "Tahfidz A", schedule: "Senin - Jumat, 18.30" },
   { id: 3, name: "Al-Qur'an Dewasa", schedule: "Sabtu - Minggu, 08.00" },
 ];
 
+// Mock Data Hafalan (History)
 const mockHistory = [
   { day: 'Sen', pages: 1 },
   { day: 'Sel', pages: 2 },
@@ -97,8 +96,7 @@ const Badge = ({ children, type = "success" }) => {
 
 export default function App() {
   // State
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'forgot'
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Auth State
   const [activeTab, setActiveTab] = useState('dashboard');
   const [config, setConfig] = useState(initialConfig);
   const [students, setStudents] = useState(initialStudents);
@@ -110,22 +108,22 @@ export default function App() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null); 
-  const [editingId, setEditingId] = useState(null); // Added: Untuk tracking ID yang diedit
   const [formData, setFormData] = useState({});
 
+  // Responsive Handler
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Handler Upload Images (Logo & Signatures)
-  const handleImageUpload = (e, targetField) => {
+  // Handler Upload Logo
+  const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setConfig(prev => ({ ...prev, [targetField]: reader.result }));
+        setConfig(prev => ({ ...prev, institutionLogo: reader.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -134,89 +132,45 @@ export default function App() {
   // Handler Auth
   const handleLogin = (e) => {
     e.preventDefault();
+    // Simulate login success
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setActiveTab('dashboard');
-    setAuthMode('login');
   };
 
-  // Handler CRUD
+  // Handler Add Data
   const handleAdd = (type) => {
     setModalType(type);
-    setEditingId(null); // Reset editing ID
     setFormData({});
     setIsModalOpen(true);
   };
 
-  const handleEdit = (type, item) => {
-    setModalType(type);
-    setEditingId(item.id);
-    setFormData(item); // Pre-fill data
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (type, id) => {
-    if (window.confirm("Yakin ingin menghapus data ini?")) {
-      if (type === 'student') setStudents(students.filter(s => s.id !== id));
-      if (type === 'teacher') setTeachers(teachers.filter(t => t.id !== id));
-      if (type === 'class') setClasses(classes.filter(c => c.id !== id));
-    }
-  };
-
   const handleSaveData = () => {
-    // 1. Logic Santri
-    if (modalType === 'student') {
-      const payload = {
-        name: formData.name || "Santri Baru",
-        class: formData.class || "Jilid 1",
-        parent: formData.parent || "-",
-        attendance: formData.attendance || 0,
-        lastSurah: formData.lastSurah || "-",
-        lastAyat: formData.lastAyat || 0
-      };
-
-      if (editingId) {
-        setStudents(students.map(s => s.id === editingId ? { ...s, ...payload } : s));
-      } else {
-        setStudents([...students, { id: Date.now(), ...payload }]);
-      }
-    } 
-    // 2. Logic Guru
-    else if (modalType === 'teacher') {
-      const payload = {
+    if (modalType === 'teacher') {
+      const newTeacher = {
+        id: teachers.length + 1,
         name: formData.name || "Guru Baru",
         phone: formData.phone || "-",
         subject: formData.subject || "Umum"
       };
-
-      if (editingId) {
-        setTeachers(teachers.map(t => t.id === editingId ? { ...t, ...payload } : t));
-      } else {
-        setTeachers([...teachers, { id: Date.now(), ...payload }]);
-      }
-    } 
-    // 3. Logic Kelas
-    else if (modalType === 'class') {
-      const payload = {
+      setTeachers([...teachers, newTeacher]);
+    } else if (modalType === 'class') {
+      const newClass = {
+        id: classes.length + 1,
         name: formData.name || "Kelas Baru",
         schedule: formData.schedule || "Belum diatur"
       };
-
-      if (editingId) {
-        setClasses(classes.map(c => c.id === editingId ? { ...c, ...payload } : c));
-      } else {
-        setClasses([...classes, { id: Date.now(), ...payload }]);
-      }
+      setClasses([...classes, newClass]);
     }
     setIsModalOpen(false);
   };
 
   // --- SUB-VIEWS ---
 
-  // 0. LOGIN VIEW (Modified: Forgot & Register)
+  // 0. LOGIN VIEW
   const LoginView = () => (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 animate-fade-in">
@@ -224,79 +178,45 @@ export default function App() {
            <div className={`w-16 h-16 rounded-xl ${config.logoColor} flex items-center justify-center text-white font-bold mx-auto mb-4 shadow-lg shadow-emerald-200`}>
             <BookOpen size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            {authMode === 'login' ? 'RaporKu Admin' : authMode === 'register' ? 'Buat Akun Baru' : 'Lupa Password'}
-          </h1>
-          <p className="text-slate-500 mt-2">
-            {authMode === 'login' ? 'Masuk untuk mengelola data lembaga' : authMode === 'register' ? 'Daftarkan lembaga Anda' : 'Masukkan email untuk reset password'}
-          </p>
+          <h1 className="text-2xl font-bold text-slate-800">RaporKu Admin</h1>
+          <p className="text-slate-500 mt-2">Masuk untuk mengelola data lembaga</p>
         </div>
 
-        {authMode !== 'forgot' && (
-            <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
-                <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input 
-                    type="text" 
-                    required
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-                    placeholder="admin"
-                />
-                </div>
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input 
+                type="text" 
+                required
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                placeholder="admin"
+              />
             </div>
-            
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input 
-                    type="password" 
-                    required
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-                    placeholder="••••••••"
-                />
-                </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input 
+                type="password" 
+                required
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                placeholder="••••••••"
+              />
             </div>
+          </div>
 
-            <button 
-                type="submit"
-                className={`w-full ${config.logoColor} text-white py-3 rounded-lg font-bold hover:opacity-90 transition shadow-lg shadow-emerald-100 flex items-center justify-center gap-2`}
-            >
-                {authMode === 'login' ? 'Masuk Dashboard' : 'Daftar Sekarang'} <ChevronRight size={18} />
-            </button>
-            </form>
-        )}
-
-        {authMode === 'forgot' && (
-            <div className="space-y-5">
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                    <input type="email" placeholder="contoh@email.com" className="w-full px-4 py-3 rounded-lg border border-slate-200" />
-                </div>
-                <button className={`w-full ${config.logoColor} text-white py-3 rounded-lg font-bold hover:opacity-90 transition`}>
-                    Kirim Link Reset
-                </button>
-                <button onClick={() => setAuthMode('login')} className="w-full text-slate-500 text-sm py-2">
-                    Kembali ke Login
-                </button>
-            </div>
-        )}
+          <button 
+            type="submit"
+            className={`w-full ${config.logoColor} text-white py-3 rounded-lg font-bold hover:opacity-90 transition shadow-lg shadow-emerald-100 flex items-center justify-center gap-2`}
+          >
+            Masuk Dashboard <ChevronRight size={18} />
+          </button>
+        </form>
         
-        {authMode === 'login' && (
-            <div className="flex justify-between mt-6 text-sm">
-                <button onClick={() => setAuthMode('forgot')} className="text-slate-500 hover:text-emerald-600">Lupa Password?</button>
-                <button onClick={() => setAuthMode('register')} className="text-emerald-600 font-bold hover:underline">Buat Akun</button>
-            </div>
-        )}
-        
-        {authMode === 'register' && (
-             <p className="text-center text-sm mt-6">
-                Sudah punya akun? <button onClick={() => setAuthMode('login')} className="text-emerald-600 font-bold hover:underline">Masuk</button>
-             </p>
-        )}
-
         <p className="text-center text-xs text-slate-400 mt-8">
           &copy; 2024 RaporKu SaaS Platform
         </p>
@@ -304,7 +224,7 @@ export default function App() {
     </div>
   );
 
-  // 1. DASHBOARD VIEW (Modified: Removed Input Button)
+  // 1. DASHBOARD VIEW
   const DashboardView = () => (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -312,14 +232,19 @@ export default function App() {
           <h1 className="text-2xl font-bold text-slate-800">Assalamu'alaikum, Ustadz</h1>
           <p className="text-slate-500">Ringkasan aktivitas {config.institutionName} hari ini.</p>
         </div>
-        {/* Tombol Input Setoran DIHAPUS sesuai permintaan #1 */}
+        <button 
+          onClick={() => setActiveTab('grading')}
+          className="hidden md:flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
+        >
+          <Plus size={18} /> Input Setoran
+        </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Santri", val: students.length, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total Guru", val: teachers.length, icon: GraduationCap, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Total Guru", val: teachers.length, icon: GraduationCap, color: "text-emerald-600", bg: "bg-emerald-50" }, // Updated
           { label: "Rata-rata Nilai", val: config.gradingType === 'numeric' ? "88.5" : "Jayyid", icon: Award, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Kehadiran", val: "94%", icon: CheckCircle, color: "text-purple-600", bg: "bg-purple-50" },
         ].map((stat, idx) => (
@@ -399,7 +324,7 @@ export default function App() {
     </div>
   );
 
-  // 2. INPUT NILAI / SANTRI VIEW (Modified: Added Add, Edit, Delete)
+  // 2. INPUT NILAI / SANTRI VIEW
   const StudentsView = () => (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -413,10 +338,8 @@ export default function App() {
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
-          <button 
-            onClick={() => handleAdd('student')}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition flex items-center gap-2"
-          >
+          {/* Tombol tambah santri (Placeholder) */}
+          <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition flex items-center gap-2">
             <Plus size={18} /> <span className="hidden md:inline">Tambah</span>
           </button>
         </div>
@@ -424,13 +347,7 @@ export default function App() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {students.map((student) => (
-          <Card key={student.id} className="hover:shadow-md transition duration-200 relative group">
-             {/* Edit & Delete Buttons for Student */}
-            <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit('student', student)} className="p-1.5 text-blue-500 bg-blue-50 rounded hover:bg-blue-100"><Edit size={16}/></button>
-                <button onClick={() => handleDelete('student', student.id)} className="p-1.5 text-red-500 bg-red-50 rounded hover:bg-red-100"><Trash2 size={16}/></button>
-            </div>
-
+          <Card key={student.id} className="hover:shadow-md transition duration-200">
             <div className="p-5">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex gap-3">
@@ -442,6 +359,7 @@ export default function App() {
                     <p className="text-sm text-slate-500">{student.class}</p>
                   </div>
                 </div>
+                <Badge type="info">Aktif</Badge>
               </div>
               
               <div className="space-y-2 mb-4">
@@ -476,7 +394,7 @@ export default function App() {
     </div>
   );
 
-  // --- NEW VIEW: DATA GURU (Modified: Added Edit & Delete) ---
+  // --- NEW VIEW: DATA GURU ---
   const TeachersView = () => (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -491,11 +409,7 @@ export default function App() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {teachers.map((teacher) => (
-          <Card key={teacher.id} className="p-5 hover:shadow-md transition relative group">
-            <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit('teacher', teacher)} className="p-1.5 text-blue-500 bg-blue-50 rounded hover:bg-blue-100"><Edit size={16}/></button>
-                <button onClick={() => handleDelete('teacher', teacher.id)} className="p-1.5 text-red-500 bg-red-50 rounded hover:bg-red-100"><Trash2 size={16}/></button>
-            </div>
+          <Card key={teacher.id} className="p-5 hover:shadow-md transition">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
                 <Users size={24} />
@@ -513,7 +427,7 @@ export default function App() {
     </div>
   );
 
-  // --- NEW VIEW: DATA KELAS (Modified: Added Edit & Delete) ---
+  // --- NEW VIEW: DATA KELAS ---
   const ClassesView = () => (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -528,7 +442,7 @@ export default function App() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {classes.map((cls) => (
-          <Card key={cls.id} className="p-6 hover:shadow-md transition border-l-4 border-l-emerald-500 relative group">
+          <Card key={cls.id} className="p-6 hover:shadow-md transition border-l-4 border-l-emerald-500">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-bold text-lg text-slate-800">{cls.name}</h3>
@@ -537,10 +451,9 @@ export default function App() {
                   <span>{cls.schedule}</span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                 <button onClick={() => handleEdit('class', cls)} className="text-blue-500 hover:text-blue-700"><Edit size={18} /></button>
-                 <button onClick={() => handleDelete('class', cls.id)} className="text-red-500 hover:text-red-700"><Trash2 size={18} /></button>
-              </div>
+              <button className="text-slate-400 hover:text-emerald-600">
+                <Settings size={18} />
+              </button>
             </div>
             <div className="mt-4 flex gap-2">
               <Badge type="info">30 Santri</Badge>
@@ -552,9 +465,10 @@ export default function App() {
     </div>
   );
 
-  // 3. GRADING FORM (No changes)
+  // 3. GRADING FORM (FLEXIBLE)
   const GradingView = () => {
     if (!selectedStudent) return <div className="p-8 text-center">Pilih santri terlebih dahulu dari menu Santri.</div>;
+    // ... (Existing Grading View Code - No Changes needed logically, just passing through)
     return (
       <div className="max-w-3xl mx-auto pb-20 md:pb-0 animate-fade-in">
         <button 
@@ -649,7 +563,7 @@ export default function App() {
     );
   };
 
-  // 4. SETTINGS VIEW (Modified: Added Signature Uploads & Headmaster Name)
+  // 4. SETTINGS VIEW
   const SettingsView = () => (
     <div className="max-w-2xl mx-auto space-y-6 pb-20 md:pb-0 animate-fade-in">
       <h1 className="text-2xl font-bold text-slate-800">Pengaturan Lembaga</h1>
@@ -674,11 +588,11 @@ export default function App() {
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-slate-700 mb-1">Logo Lembaga</label>
-              <p className="text-xs text-slate-500 mb-3">Format: PNG, JPG (Max 2MB).</p>
+              <p className="text-xs text-slate-500 mb-3">Format: PNG, JPG (Max 2MB). Akan muncul di kop rapor.</p>
               <div className="flex gap-2">
                 <label className="cursor-pointer bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">
                   Pilih Logo
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'institutionLogo')} />
+                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                 </label>
                 {config.institutionLogo && (
                   <button 
@@ -712,48 +626,6 @@ export default function App() {
               placeholder="Contoh: Jl. Raya Kebayoran No. 12, Jakarta Selatan"
             />
           </div>
-
-           {/* Input Nama Kepala Sekolah */}
-           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Nama Kepala Sekolah</label>
-            <input 
-              type="text" 
-              value={config.headmasterName} 
-              onChange={(e) => setConfig({...config, headmasterName: e.target.value})}
-              className="w-full rounded-lg border-slate-200 border px-3 py-2" 
-            />
-          </div>
-
-           {/* Tanda Tangan Section */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Upload TTD Kepsek */}
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Tanda Tangan Kepala Sekolah</label>
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 border rounded bg-white flex items-center justify-center overflow-hidden">
-                             {config.signatureHeadmaster ? <img src={config.signatureHeadmaster} className="w-full h-full object-contain"/> : <span className="text-xs text-slate-300">Kosong</span>}
-                        </div>
-                        <label className="cursor-pointer text-emerald-600 text-sm font-medium hover:underline">
-                            Upload
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'signatureHeadmaster')} />
-                        </label>
-                    </div>
-                </div>
-
-                {/* Upload TTD Guru */}
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Tanda Tangan Guru</label>
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 border rounded bg-white flex items-center justify-center overflow-hidden">
-                             {config.signatureTeacher ? <img src={config.signatureTeacher} className="w-full h-full object-contain"/> : <span className="text-xs text-slate-300">Kosong</span>}
-                        </div>
-                        <label className="cursor-pointer text-emerald-600 text-sm font-medium hover:underline">
-                            Upload
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'signatureTeacher')} />
-                        </label>
-                    </div>
-                </div>
-           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Tema Warna</label>
@@ -822,7 +694,7 @@ export default function App() {
     </div>
   );
 
-  // 5. REPORT CARD PREVIEW (Modified: Logo Left, Teacher Sig, Signature Image)
+  // 5. REPORT CARD PREVIEW
   const ReportCardView = () => {
     if (!selectedStudent) return <div className="p-8 text-center">Pilih santri terlebih dahulu.</div>;
     const date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'});
@@ -837,24 +709,18 @@ export default function App() {
         </button>
 
         <div className="bg-white p-8 md:p-12 shadow-lg rounded-xl print:shadow-none print:p-0">
-          {/* Header Rapor (Modified Layout: Flex) */}
-          <div className="flex items-center gap-6 border-b-2 border-emerald-600 pb-6 mb-8 relative">
-             <div className="w-24 shrink-0 flex items-center justify-center">
-                {config.institutionLogo ? (
-                    <img src={config.institutionLogo} alt="Logo" className="w-full object-contain" />
-                ) : (
-                     <div className={`w-16 h-16 rounded-lg ${config.logoColor} flex items-center justify-center text-white`}>
-                         <BookOpen size={32} />
-                     </div>
-                )}
-             </div>
-             <div className="flex-1 text-left">
-                <h1 className="text-3xl font-bold text-emerald-800 uppercase tracking-wider leading-tight">{config.institutionName}</h1>
-                {config.institutionAddress && (
-                    <p className="text-slate-600 text-sm mt-1">{config.institutionAddress}</p>
-                )}
-                <p className="text-slate-500 mt-2 text-xs font-medium uppercase tracking-widest">Laporan Hasil Belajar Santri</p>
-             </div>
+          {/* Header Rapor */}
+          <div className="text-center border-b-2 border-emerald-600 pb-6 mb-8 relative">
+            <div className="flex flex-col items-center justify-center">
+              {config.institutionLogo && (
+                <img src={config.institutionLogo} alt="Logo" className="h-20 w-auto object-contain mb-4" />
+              )}
+              <h1 className="text-3xl font-bold text-emerald-800 uppercase tracking-wider leading-tight">{config.institutionName}</h1>
+              {config.institutionAddress && (
+                <p className="text-slate-600 text-sm mt-2 max-w-lg mx-auto">{config.institutionAddress}</p>
+              )}
+              <p className="text-slate-500 mt-2 text-xs font-medium uppercase tracking-widest">Laporan Hasil Belajar Santri</p>
+            </div>
           </div>
 
           {/* Info Santri */}
@@ -945,23 +811,19 @@ export default function App() {
             )}
           </div>
 
-          {/* Footer Tanda Tangan (Modified) */}
+          {/* Footer Tanda Tangan */}
           <div className="mt-16 flex justify-between text-sm text-slate-600 print:mt-8">
-            <div className="text-center w-48">
+            <div className="text-center">
               <p>Mengetahui,</p>
-              <p>Guru Kelas</p>
-              <div className="h-20 flex items-center justify-center">
-                 {config.signatureTeacher ? <img src={config.signatureTeacher} className="h-full object-contain"/> : null}
-              </div>
-              <p className="font-bold border-t border-slate-300 px-4 pt-1">.........................</p>
+              <p>Orang Tua Wali</p>
+              <div className="h-20"></div>
+              <p className="font-bold border-t border-slate-300 px-4 pt-1">({selectedStudent.parent})</p>
             </div>
-            <div className="text-center w-48">
+            <div className="text-center">
               <p>Jakarta, {date}</p>
               <p>Kepala {config.institutionName}</p>
-              <div className="h-20 flex items-center justify-center">
-                 {config.signatureHeadmaster ? <img src={config.signatureHeadmaster} className="h-full object-contain"/> : null}
-              </div>
-              <p className="font-bold border-t border-slate-300 px-4 pt-1">{config.headmasterName}</p>
+              <div className="h-20"></div>
+              <p className="font-bold border-t border-slate-300 px-4 pt-1">H. Abdullah S.Pd.I</p>
             </div>
           </div>
         </div>
@@ -969,45 +831,38 @@ export default function App() {
     );
   };
 
-  // --- GENERIC MODAL FORM (Modified: Supports Student & Pre-fill) ---
+  // --- GENERIC MODAL FORM ---
   const ModalForm = () => {
     if (!isModalOpen) return null;
-
-    const getTitle = () => {
-        if(modalType === 'teacher') return editingId ? 'Edit Data Guru' : 'Tambah Data Guru';
-        if(modalType === 'class') return editingId ? 'Edit Data Kelas' : 'Tambah Data Kelas';
-        if(modalType === 'student') return editingId ? 'Edit Data Santri' : 'Tambah Data Santri';
-    }
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
           <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
-            <h3 className="font-bold text-slate-800">{getTitle()}</h3>
+            <h3 className="font-bold text-slate-800">
+              {modalType === 'teacher' ? 'Tambah Data Guru' : 'Tambah Data Kelas'}
+            </h3>
             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
               <X size={20} />
             </button>
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nama {modalType === 'teacher' ? 'Guru' : modalType === 'student' ? 'Santri' : 'Kelas'}</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Nama {modalType === 'teacher' ? 'Guru' : 'Kelas'}</label>
               <input 
                 type="text" 
-                value={formData.name || ''}
                 className="w-full rounded-lg border-slate-200 border px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                placeholder={modalType === 'teacher' ? "Nama Lengkap" : modalType === 'student' ? "Nama Santri" : "Contoh: Jilid 1 / Tahfidz A"}
+                placeholder={modalType === 'teacher' ? "Nama Lengkap" : "Contoh: Jilid 1 / Tahfidz A"}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
               />
             </div>
             
-            {/* Form Fields untuk GURU */}
             {modalType === 'teacher' && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Bidang Studi / Mengajar</label>
                   <input 
                     type="text" 
-                    value={formData.subject || ''}
                     className="w-full rounded-lg border-slate-200 border px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     placeholder="Contoh: Tahfidz, Tilawati, Iqra"
                     onChange={(e) => setFormData({...formData, subject: e.target.value})}
@@ -1017,7 +872,6 @@ export default function App() {
                   <label className="block text-sm font-medium text-slate-700 mb-1">No. Telepon / WA</label>
                   <input 
                     type="text" 
-                    value={formData.phone || ''}
                     className="w-full rounded-lg border-slate-200 border px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     placeholder="08..."
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -1026,45 +880,16 @@ export default function App() {
               </>
             )}
 
-            {/* Form Fields untuk KELAS */}
             {modalType === 'class' && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Jadwal</label>
                 <input 
                   type="text" 
-                  value={formData.schedule || ''}
                   className="w-full rounded-lg border-slate-200 border px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   placeholder="Contoh: Senin - Kamis, 16.00"
                   onChange={(e) => setFormData({...formData, schedule: e.target.value})}
                 />
               </div>
-            )}
-
-            {/* Form Fields untuk SANTRI (Added) */}
-            {modalType === 'student' && (
-              <>
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Kelas</label>
-                    <select 
-                        value={formData.class || ''}
-                        onChange={(e) => setFormData({...formData, class: e.target.value})}
-                        className="w-full rounded-lg border-slate-200 border px-3 py-2 focus:ring-2 focus:ring-emerald-500"
-                    >
-                        <option value="">Pilih Kelas</option>
-                        {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Nama Orang Tua</label>
-                  <input 
-                    type="text" 
-                    value={formData.parent || ''}
-                    className="w-full rounded-lg border-slate-200 border px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    placeholder="Nama Wali"
-                    onChange={(e) => setFormData({...formData, parent: e.target.value})}
-                  />
-                </div>
-              </>
             )}
             
             <button 
